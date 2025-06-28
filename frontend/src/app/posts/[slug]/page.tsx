@@ -1,58 +1,24 @@
+import ReactMarkdown from 'react-markdown'
 
-'use client';
-
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-
-interface Post {
-  slug: string;
-  title: string;
-  content: string;
+interface PostFull {
+  slug: string
+  title: string
+  content: string
+  author: string
+  date: string
+  category: string
 }
 
-const API_URL = 'http://localhost:8000/api/posts';
-
-export default function PostPage() {
-  const params = useParams();
-  const slug = params.slug as string;
-
-  const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (slug) {
-      const fetchPost = async () => {
-        try {
-          const response = await axios.get(`${API_URL}/${slug}`);
-          setPost(response.data);
-        } catch (error) {
-          console.error(`Error fetching post ${slug}:`, error);
-        } finally {
-            setLoading(false);
-        }
-      };
-      fetchPost();
-    }
-  }, [slug]); // Этот эффект перезапустится, если slug изменится
-
-  if (loading) {
-    return <div className="text-center p-10">Загрузка...</div>;
-  }
-
-  if (!post) {
-    return <div className="text-center p-10">Пост не найден</div>;
-  }
+export default async function PostPage({ params }: { params: { slug: string } }) {
+  const res = await fetch(`http://localhost:8000/api/posts/${params.slug}`)
+  if (!res.ok) throw new Error('Пост не найден')
+  const post: PostFull = await res.json()
 
   return (
-    <article className="max-w-3xl mx-auto p-8">
-        <Link href="/" className="text-blue-500 hover:underline mb-8 block">&larr; Назад ко всем постам</Link>
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-4">{post.title}</h1>
-        <div
-            className="prose lg:prose-xl text-gray-700"
-            dangerouslySetInnerHTML={{ __html: post.content.replace(/\n/g, '<br />') }}
-        />
-    </article>
-  );
+    <main className="max-w-2xl mx-auto p-6 bg-white shadow mt-10 rounded">
+      <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
+      <p className="text-sm text-gray-500 mb-6">Автор: {post.author} | Дата: {post.date}</p>
+      <div className="prose"><ReactMarkdown>{post.content}</ReactMarkdown></div>
+    </main>
+  )
 }
